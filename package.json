@@ -1,0 +1,23 @@
+{
+  "name": "leaflet.ptvlayer",
+  "version": "1.0.0",
+  "description": "A Leaflet plugin for PTV xMapServer layers",
+  "main": "Leaflet.PtvLayer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nexogen-international/Leaflet.PtvLayer.git"
+  },
+  "keywords": [
+    "Leaflet",
+    "PTV"
+  ],
+  "author": "PTV AG",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nexogen-international/Leaflet.PtvLayer/issues"
+  },
+  "homepage": "https://github.com/nexogen-international/Leaflet.PtvLayer#readme"
+}
