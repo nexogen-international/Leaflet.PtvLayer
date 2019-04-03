@@ -4,7 +4,7 @@
 L.PtvLayer = L.NonTiledLayer.extend({
     defaultXMapParams: {
         format: 'PNG',
-        token: '', 
+        token: '',
         markerIsBalloon: false
     },
 
@@ -22,7 +22,7 @@ L.PtvLayer = L.NonTiledLayer.extend({
 
         for (var i in options) {
             // all keys that are not PtvLayerTiledLayer options go to xMap params
-			if (!L.NonTiledLayer.prototype.options.hasOwnProperty(i) && 
+			if (!L.NonTiledLayer.prototype.options.hasOwnProperty(i) &&
             !(L.Layer && L.Layer.prototype.options.hasOwnProperty(i))) {
                 xMapParams[i] = options[i];
             }
@@ -37,11 +37,7 @@ L.PtvLayer = L.NonTiledLayer.extend({
         L.NonTiledLayer.prototype.initialize.call(this, options);
     },
 
-    _addInteraction: function (resp) {
-        // http://stackoverflow.com/questions/17028830/imageoverlay-and-rectangle-z-index-issue                                                                                        
-        var svgObj = $('.leaflet-overlay-pane svg');
-        svgObj.css('z-index', 9999);
-
+    _addInteraction: function(resp) {
         var that = this;
 
         for (var l = 0; l < resp.objects.length; l++) {
@@ -66,7 +62,7 @@ L.PtvLayer = L.NonTiledLayer.extend({
                         var g = this._map.containerPointToLatLng([p.x, p.y]);
                         lineString[j] = [g.lat, g.lng];
                     }
-    
+
                     // create a transparent polyline from an arrays of LatLng points and bind it to the popup
                     var polyline = L.polyline(lineString, {
                         color: 'white',
@@ -79,7 +75,7 @@ L.PtvLayer = L.NonTiledLayer.extend({
                     if (this._getId) {
                         if ('p' + id === this.lastOpenPopupId)
                             polyline.openPopup();
-    
+
                         polyline.tag = id;
                         polyline.on('popupopen', function (e) {
                             that.lastOpenPopupId = 'p' + e.target.tag;
@@ -100,7 +96,7 @@ L.PtvLayer = L.NonTiledLayer.extend({
                 if (this._getId) {
                     if ('m' + id === this.lastOpenPopupId)
                         marker.openPopup();
-    
+
                     marker.tag = id;
                     marker.on('popupopen', function (e) {
                         that.lastOpenPopupId = 'm' + e.target.tag;
@@ -114,7 +110,7 @@ L.PtvLayer = L.NonTiledLayer.extend({
     },
 
     lastOpenPopupId: '',
-    
+
     _getId: function (objectInfo) {
         return objectInfo.descr + objectInfo.ref.point.x + objectInfo.ref.point.y;
     },
@@ -122,7 +118,7 @@ L.PtvLayer = L.NonTiledLayer.extend({
     _formatTooltip: function (description) {
         return replaceAll(description, '|', '<br>');
     },
-    
+
     pixToLatLng: function (world1, world2, width, height, point) {
         var m1 = this.latLngToMercator(world1);
         var m2 = this.latLngToMercator(world2);
@@ -186,32 +182,22 @@ L.PtvLayer = L.NonTiledLayer.extend({
             });
     },
 
-    // runRequest executes a json request on PTV xServer internet, 
+    // runRequest executes a json request on PTV xServer internet,
     // given the url endpoint, the token and the callbacks to be called
-    // upon completion. The error callback is parameterless, the success
-    // callback is called with the object returned by the server. 
-    runRequest: function (url, request, token, handleSuccess, handleError) {
-        $.ajax({
-            url: url,
-            type: 'POST',
-            data: JSON.stringify(request),
-
-            headers: function () {
-                var h = {
-                    'Content-Type': 'application/json'
-                };
-                if (token) h['Authorization'] = 'Basic ' + btoa('xtok:' + token);
-                return h;
-            }(),
-
-            success: function (data, status, xhr) {
-                handleSuccess(data);
-            },
-
-            error: function (xhr, status, error) {
-                handleError(xhr);
+    // upon completion. The error callback is called with the error, the success
+    // callback is called with the object returned by the server.
+    runRequest: function(url, request, token, handleSuccess, handleError) {
+        fetch(url, {
+            method: 'POST',
+            body: JSON.stringify(request),
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: token ? `Bearer ${token}` : ''
             }
-        });
+        })
+          .then(res => res.json())
+          .then(res => handleSuccess(res))
+          .catch(err => handleError(err));
     },
 
     setParams: function (params, noRedraw) {
@@ -303,7 +289,7 @@ L.PtvLayer.POI = L.PtvLayer.extend({
 
     getRequest: function (world1, world2, width, height) {
         var request = L.PtvLayer.prototype.getRequest.call(this, world1, world2, width, height);
-        
+
         request.layers = [{
             '$type': 'SMOLayer',
             'name': 'default.points-of-interest' + (this.options.filter? ';' + this.options.filter : ''),
@@ -398,21 +384,21 @@ L.PtvLayer.TruckAttributes = L.PtvLayer.extend({
         L.PtvLayer.prototype.initialize.call(this, url, options);
     },
 
-    getRequest: function (world1, world2, width, height) {
-        var request = L.PtvLayer.prototype.getRequest.call(this, world1, world2, width, height);
-        request.layers = [{
-            '$type': 'RoadEditorLayer',
-            'name': 'truckattributes',
-            'visible': true,
-            'objectInfos': 'FULLGEOMETRY'
-        },
-        {
-            '$type': 'StaticPoiLayer',
-            'name': 'street',
-            'visible': 'true',
-            'category': -1,
-            'detailLevel': 0
-        }
+    getRequest: function(world1, world2, width, height) {
+        var request = L.PtvLayer.prototype.getRequest.call(
+          this,
+          world1,
+          world2,
+          width,
+          height
+        );
+        request.layers = [
+            {
+                $type: 'FeatureLayer',
+                name: 'PTV_TruckAttributes',
+                visible: true,
+                objectInfos: 'REFERENCEPOINT'
+            }
         ];
         request.callerContext.properties[0].value = 'truckattributes';
 
@@ -423,7 +409,7 @@ L.PtvLayer.TruckAttributes = L.PtvLayer.extend({
 L.PtvLayer.DataManager = L.PtvLayer.extend({
 
     // Constructor of the data manager layer.
-    // url: String -> 
+    // url: String ->
     // layerId: String -> Id of the data manager layer to display.
     // options: Object -> Options for the layer display.
     initialize: function (url, layerId, options) { // (String, String, Object)
