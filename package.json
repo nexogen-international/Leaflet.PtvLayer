@@ -1,6 +1,6 @@
 {
   "name": "leaflet.ptvlayer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A Leaflet plugin for PTV xMapServer layers",
   "main": "Leaflet.PtvLayer.js",
   "scripts": {
