@@ -732,6 +732,46 @@ L.PtvLayer.tiled = function (url, options) {
     return new L.PtvLayer.Tiled(url, options);
 };
 
+const formatMessage = (template, values) => {
+    return template.replace(/\{([^\s]+)\}/gi, (_, valueKey) => {
+        return values[valueKey];
+    });
+};
+const featureLayerFgAvailableLanguages = { en: 'en' };
+const featureLayerFgKeysEn = {
+    totalPermittedWeight: 'Total permitted weight: {value} kg',
+    loadType: 'Driving in is forbidden except for {value}',
+    driveType: 'Drive type: {value}',
+    maxHeight: 'Maximum height allowed: {value} cm',
+    maxWeight: 'Maximum weight allowed: {value} kg',
+    maxWidth: 'Maximum width allowed: {value} cm',
+    maxLength: 'Maximum length allowed: {value} cm',
+    maxAxleLoad: 'Maximum axle load allowed: {value} kg',
+    hazardousToWaters: 'Transporting hazardous to waters is {value}',
+    hazardousGoods: 'Transporting hazardous goods is {value}',
+    combustibles: 'Transporting combustibles is {value}',
+    freeForDelivery: '',
+    tunnelRestriction:
+      'Driving in is forbidden for trucks transporting hazardous goods. Type: {value}'
+};
+const featureLayerFgValuesEn = {
+    loadType: {
+        0: 'passenger transport',
+        1: 'goods transport',
+        2: 'goods or passenger transport'
+    },
+    driveType: { 0: 'truck', 1: 'bicycle', 2: 'pedestrian' },
+    hazardousToWaters: { 0: 'allowed', 1: 'forbidden' },
+    hazardousGoods: { 0: 'allowed', 1: 'forbidden' },
+    combustibles: { 0: 'allowed', 1: 'forbidden' },
+    freeForDelivery: { 0: '', 1: 'Free for delivery' },
+    tunnelRestriction: { 0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E' }
+};
+const featureLayerMessages = {
+    en: { keys: featureLayerFgKeysEn, values: featureLayerFgValuesEn }
+};
+const featureLayerAttributeExclusions = ['opening', 'hasTrailer'];
+
 L.PtvLayer.FeatureLayerFg = L.PtvLayer.NonTiled.extend({
     initialize: function (url, options) { // (String, Object)
         L.PtvLayer.NonTiled.prototype.initialize.call(this, url, options);
@@ -761,6 +801,32 @@ L.PtvLayer.FeatureLayerFg = L.PtvLayer.NonTiled.extend({
 
         }, this);
     },
+
+    _formatTooltip: function(description) {
+        const language =
+          featureLayerFgAvailableLanguages[this.options.language] || 'en';
+        const { keys, values } = featureLayerMessages[language];
+
+        const restrictions = description.split('|');
+
+        const formattedRestrictions = restrictions.reduce((acc, curr) => {
+            const [key, value] = curr.split('=');
+
+            if (featureLayerAttributeExclusions.includes(key)) return acc;
+
+            const template = keys[key];
+            const currString = template
+              ? formatMessage(template, {
+                  value: (values[key] || {})[value] || value
+              })
+              : `${key}: ${value}`;
+
+            return acc.length ? `${acc}<br/>${currString}` : currString;
+        }, '');
+
+        return `<strong>${formattedRestrictions}</strong>`;
+    },
+
     type: 'FeatureLayerFg'
 });
 
